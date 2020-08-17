@@ -5,6 +5,7 @@ set seed 3424421
 syntax anything(id="model list" name=commands everything), ///
     [Reps(integer 3)] /// /* set number of bootstrap draws  */
     [BS_sample(integer -1)] /// /* set bootstrap sample size  */
+    [echo] /// option to control if it should display every bootstrap iteration 
     [STRata(passthru) CLuster(passthru) IDcluster(passthru) Weight(passthru)] /* passthru args for bootstrap */
 
 
@@ -106,7 +107,7 @@ matrix rownames $sdPVal  = `sorted_coef_list'
 forvalues bs_index = 1/`reps'{
     preserve 
 
-    di as text "bootstrap iteration `bs_index'"
+    if !missing("`echo'") di as text "bootstrap iteration `bs_index'"
     // we support all the passthrough args for bsample 
     if !missing("`strata'`cluster'`idcluster'`weight'") local comma ","
     bsample `bs_sample' `comma' `strata' `cluster' `idcluster' `weight' 
