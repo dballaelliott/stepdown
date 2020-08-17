@@ -1,9 +1,10 @@
+/*! version 1.0.0 17aug dballaelliott@gmail.com */
 
 program stepdown, rclass
 set seed 3424421
 
 syntax anything(id="model list" name=commands everything), ///
-    [Reps(integer 3)] /// /* set number of bootstrap draws  */
+    [Reps(integer 10)] /// /* set number of bootstrap draws  */
     [BS_sample(integer -1)] /// /* set bootstrap sample size  */
     [echo] /// option to control if it should display every bootstrap iteration 
     [STRata(passthru) CLuster(passthru) IDcluster(passthru) Weight(passthru)] /* passthru args for bootstrap */
@@ -28,9 +29,7 @@ local input_command_list `commands'
 while "`commands'" != ""{
     
     gettoken cmd commands : commands, parse(" ||") bind match(parenthesis)
-    
-    /* di as text "Executing command: " as input `"`cmd'"' */
-    
+        
     qui: store_pvalues `cmd' mat($sdPVal)
 
     /* keep track of the number of models */
@@ -98,8 +97,6 @@ forvalues bs_index = 1/`reps'{
     tempname bs_ordered 
     mat_order `bs_ordered' : $sdBootPVals $sdPVal
 
-    /* di "`: rowfullnames `bs_ordered''"   */
-
     /* stepdown from max to min to enforce monotonicity*/
     forvalues r = `=`n_rows'-1'(-1)1{ // start in the second-to-last row
         /* "cascade" small values down, so that monotonicity is enforced
@@ -108,25 +105,21 @@ forvalues bs_index = 1/`reps'{
     }
 
     mata p_bs_col = st_matrix("`bs_ordered'")
+
     if `bs_index' == 1 mata p_bs = p_bs_col
     else mata p_bs = p_bs, p_bs_col
-
- 
-    /* mat list `bs_ordered' */
 
     mat drop $sdBootPVals
     restore
 }
 
- 
-
-/* mata p_bs */
-
 mata raw_p =  ordered[,1]
+/* make a matrix where each column is a bootstrap iteration */
+/*  each entry is 0 if it is less than the raw p-value, 
+    and 1 if it's larger than the raw p-value */
 mata adj_p =  p_bs :<= raw_p
-/* mata adj_p */
+
 mata adj_p = rowsum(adj_p) :/ rownonmissing(adj_p)
-/* mata adj_p */
 
 mata st_matrix("$sdPAdjusted", adj_p)
 
@@ -137,8 +130,14 @@ forvalues r = 2/`n_rows'{ // start in the second row
     mat $sdPAdjusted[`r',1] = max($sdPAdjusted[`r'-1,1], $sdPAdjusted[`r',1]) 
 }
 
-matrix rownames $sdPAdjusted  = $sdCoefList
+tempname orig_order
+mat `orig_order' = J(`n_rows',1,.) 
+mat rownames `orig_order' = $sdCoefList
 
+matrix rownames $sdPAdjusted  = `sorted_coef_list'
+
+mat_order $sdPVal : $sdPVal `orig_order'
+mat_order $sdPAdjusted : $sdPAdjusted `orig_order'
 
 return matrix p = $sdPVal
 return matrix adj_p = $sdPAdjusted
@@ -189,8 +188,3 @@ syntax anything(id="model" name=command everything), ///
 
 
 end 
-
-/* 
-FIRST: 
-run all the regressions and store the p-values 
-+ then sort them so that the matrix is ascending */
