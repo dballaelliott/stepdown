@@ -9,43 +9,7 @@ syntax anything(id="model list" name=commands everything), ///
     [STRata(passthru) CLuster(passthru) IDcluster(passthru) Weight(passthru)] /* passthru args for bootstrap */
 
 
-/* di as input "input: " as text `"`commands'"' */
-
-local passed_bs_sample = `bs_sample'
-** default to a 10% sample
-
-if !missing("`cluster'"){
-    tempvar cluster_count
-
-    tokenize `cluster', parse("()") 
-
-    egen `cluster_count' = group(`3')
-
-    qui: su `cluster_count'
-
-    local n_clusters = r(max)
-
-    if `bs_sample' == -1 local bs_sample = .
-    local bs_sample = min(`bs_sample',min(`n_clusters'-1,min(round(.9 * `n_clusters'), max(30, round(.2*`n_clusters')))))
-}
-
-if !missing("`strata'"){
-    tempvar strata_size
-
-    tokenize `strata', parse("()") 
-    egen `strata_size' = count(`3'), by(`3')
-    qui: su `strata_size'
-    local min_strata = r(min)
-
-    if `bs_sample' == -1 local bs_sample = .
-
-    local bs_sample = min(`bs_sample',max(1,min(`min_strata'-1,min(round(.9 * `min_strata'), max(30, round(.2*`min_strata'))))))
-}
-
-
-if `passed_bs_sample' != -1 & `passed_bs_sample' != `bs_sample'{
-    di as error "Warning: modified bootstrap sample size from `passed_bs_sample' to `bs_sample'"
-}
+/* default to bootstrapping a sample of the same size as the original data*/
 if `bs_sample' == -1 local bs_sample
 
 tempname pmat adj_mat model_names sdCoefIds bs_pvals
