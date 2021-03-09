@@ -1,4 +1,4 @@
-/*! version 1.0.0 17aug dballaelliott@gmail.com */
+/*! version 1.1.0 9mar 2021 dballaelliott@gmail.com */
 
 program stepdown, rclass
 set seed 3424421
@@ -151,13 +151,15 @@ end
 /* internal function */
 program store_pvalues 
 
-syntax anything(id="model" name=command everything), ///
+syntax anything(id="model" name=command everything) [pweight fweight iweight aweight], ///
     ADJust(string) ///
     mat(name) ///
     [*] // allow for arbitrary command-specific options 
     
+    if !missing(`"`exp'"') local clean_weight `"[`weight'`exp']"'
+
     if "`options'" != "" local options , `options'
-    `command' `options'
+    `command' `clean_weight' `options'
 
     /* check if the p-value matrix exists */
     cap qui mat list `mat'
