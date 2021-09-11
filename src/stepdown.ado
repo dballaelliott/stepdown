@@ -1,7 +1,6 @@
-/*! version 1.1.0 9mar 2021 dballaelliott@gmail.com */
+/*! version 1.1.1 11sep 2021 dballaelliott@gmail.com */
 
 program stepdown, rclass
-set seed 3424421
 
 syntax anything(id="model list" name=commands everything), ///
     [Reps(integer 10)] /// /* set number of bootstrap draws  */
